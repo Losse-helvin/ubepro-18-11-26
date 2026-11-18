@@ -122,7 +122,9 @@ async function run() {
     const { page, net } = await pageWith(false);
     assert.equal(await page.$$eval('form', forms => forms.length), 1);
     assert.ok(await page.$('.hero #demande #lead-form'));
-    assert.ok(await page.$eval('.fuel-card', el => !el.textContent.trim() && !el.querySelector('img, text, use')));
+    // The card carries only the generic inscription requested, no brand or logo.
+    assert.equal(await page.$eval('.fuel-card', el => el.textContent.trim()), 'carte carburant pro');
+    assert.ok(await page.$eval('.fuel-card', el => !el.querySelector('img, use')));
     await checkHero(page, 'Flotte');
     await checkSuspension(page);
     assert.ok(await page.evaluate(() => [...document.querySelectorAll('a[href^="#"]')].every(a => document.getElementById(a.hash.slice(1)))));
@@ -213,7 +215,7 @@ async function run() {
       assert.ok(await p.evaluate(() => localStorage.length === 0 && sessionStorage.length === 0)); await p.close();
     }
     assert.deepEqual(errors, []);
-    console.log('OK — validation, honeypot, HTTP/JSON/refus/réseau/timeout, reprise sans doublon, succès confirmé, attribution et conversion soumises au choix facultatif. Aucun envoi réel.');
+    console.log('OK : validation, honeypot, HTTP/JSON/refus/réseau/timeout, reprise sans doublon, succès confirmé, attribution et conversion soumises au choix facultatif. Aucun envoi réel.');
   } finally { await browser.close(); }
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });
