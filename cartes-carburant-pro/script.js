@@ -153,6 +153,204 @@
     if (url.protocol === 'https:' && !url.username && !url.password) sheetUrl = url.href;
   } catch { /* feuille absente : seul le CRM est utilisé */ }
   const canSend = Boolean(typeof config.formId === 'string' && config.formId.trim() && endpoint);
+
+  /* ---------------- Vérification du numéro par SMS ----------------
+     Même API que les 97 pages du dépôt (HelloLead / SMS Partner) :
+     POST action=envoyer_code|verifier_code, form-urlencoded. Le code a
+     6 chiffres, vaut 10 minutes, un nouveau remplace l'ancien. */
+  const SMS_MOBILE = /^0[67]\d{8}$/;
+  let smsUrl;
+  try {
+    const url = new URL(config.smsApiUrl);
+    if (url.protocol === 'https:' && !url.username && !url.password) smsUrl = url.href;
+  } catch { /* pas de vérification possible : le champ reste informatif */ }
+  const smsBox = document.getElementById('verification-sms');
+  const smsSend = document.getElementById('sms-send');
+  const smsRow = document.getElementById('sms-code-row');
+  const smsCode = document.getElementById('sms-code');
+  const smsCheck = document.getElementById('sms-check');
+  const smsMessage = document.getElementById('sms-message');
+  const smsBody = smsBox ? smsBox.parentElement : null;
+  let requestedPhone = '';
+  let verifiedPhone = '';
+  let smsTimer = null;
+  let smsBusy = false;
+  function smsPhone(value) { return String(value || '').replace(/[\s().-]/g, '').replace(/^(?:\+33|0033)0?/, '0'); }
+  function smsSay(text, kind) {
+    if (!smsMessage) return;
+    smsMessage.textContent = text || '';
+    smsMessage.classList.toggle('is-error', kind === 'error');
+    smsMessage.classList.toggle('is-success', kind === 'success');
+  }
+  function smsStopCountdown() {
+    if (smsTimer) window.clearInterval(smsTimer);
+    smsTimer = null;
+  }
+  function smsCountdown(seconds) {
+    smsStopCountdown();
+    let left = seconds;
+    smsSend.disabled = true;
+    const tick = () => {
+      if (left <= 0) {
+        smsStopCountdown();
+        smsSend.disabled = false;
+        smsSend.textContent = 'Renvoyer le code';
+        return;
+      }
+      smsSend.textContent = `Renvoyer le code (${left} s)`;
+      left -= 1;
+    };
+    tick();
+    smsTimer = window.setInterval(tick, 1000);
+  }
+  function smsReset() {
+    verifiedPhone = '';
+    requestedPhone = '';
+    smsStopCountdown();
+    if (smsRow) smsRow.hidden = true;
+    if (smsCode) smsCode.value = '';
+    if (smsSend) { smsSend.hidden = false; smsSend.disabled = false; smsSend.textContent = 'Vérifier ce numéro par SMS'; }
+    document.querySelectorAll('.sms-verified').forEach(node => node.remove());
+    const help = document.querySelector('.sms-help');
+    if (help) help.hidden = false;
+    const tel = document.getElementById('tel');
+    if (tel) tel.removeAttribute('aria-invalid');
+    smsSay('');
+  }
+  async function smsRequest(params) {
+    const body = new URLSearchParams({ action: params.action, telephone: params.telephone });
+    if (params.code != null) body.set('code', params.code);
+    const response = await fetch(smsUrl, { method: 'POST', mode: 'cors', credentials: 'omit', body });
+    const text = await response.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch { json = text ? { message: text.slice(0, 300) } : null; }
+    return { status: response.status, ok: response.ok, data: json || {} };
+  }
+  function smsFailed(result) {
+    const code = result.status >= 400 ? result.status
+      : parseInt(result.data.http_status || result.data.status_code || result.data.error_code, 10);
+    if (!result.ok || code >= 400) return true;
+    if (result.data.ok === false || result.data.success === false) return true;
+    return /^(error|erreur|ko|failed|fail)$/.test(String(result.data.status || result.data.statut || '').toLowerCase());
+  }
+  function smsError(result) {
+    const fallback = {
+      422: 'Numéro ou code invalide.',
+      404: 'Aucun code envoyé pour ce numéro. Demandez un nouveau code.',
+      410: 'Le code a expiré. Demandez-en un nouveau.',
+      409: 'Ce code a déjà été utilisé. Demandez-en un nouveau.',
+      429: 'Veuillez patienter avant de redemander un code.',
+      502: 'L’envoi du SMS a échoué. Réessayez dans un instant.'
+    };
+    return result.data.message || result.data.error || fallback[result.status] || 'La vérification a échoué.';
+  }
+  function smsVerified() {
+    const tel = document.getElementById('tel');
+    if (!tel) return;
+    tel.removeAttribute('aria-invalid');
+    let badge = smsBody.querySelector('.sms-verified');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'sms-verified';
+      badge.innerHTML = '<svg class="icon" aria-hidden="true" focusable="false"><use href="#check"/></svg>Numéro vérifié';
+      smsSend.insertAdjacentElement('afterend', badge);
+    }
+    badge.hidden = false;
+    const help = document.querySelector('.sms-help');
+    if (help) help.hidden = true;
+  }
+  if (smsBox) {
+    if (!smsUrl || !config.formId) {
+      // Sans API ou sans campagne, dire la vérité au lieu d'inviter à un envoi impossible.
+      smsSend.disabled = true;
+      smsSend.textContent = 'Vérification par SMS indisponible';
+      smsSay('La vérification automatique n’est pas encore ouverte. Vous pouvez envoyer votre demande, le conseiller confirmera le numéro.');
+    } else {
+      smsSend.addEventListener('click', async () => {
+        if (smsBusy) return;
+        const tel = document.getElementById('tel');
+        const number = smsPhone(tel.value);
+        if (!SMS_MOBILE.test(number)) {
+          smsSay('Saisissez un mobile français valide : 10 chiffres commençant par 06 ou 07.', 'error');
+          return;
+        }
+        smsBusy = true;
+        requestedPhone = number;
+        smsSend.disabled = true;
+        smsSay('Envoi du code en cours…');
+        try {
+          const result = await smsRequest({ action: 'envoyer_code', telephone: number });
+          if (!smsFailed(result)) {
+            smsRow.hidden = false;
+            smsCode.value = '';
+            smsCode.focus();
+            smsSay('Code envoyé par SMS.', 'success');
+            smsCountdown(config.smsCooldown || 120);
+          } else if (result.status === 429) {
+            const wait = parseInt(result.data.retry_after || result.data.delai || result.data.delai_restant, 10) || (config.smsCooldown || 120);
+            smsSay(`${smsError(result)} Délai restant : ${wait} s.`, 'error');
+            smsCountdown(wait);
+          } else {
+            smsSay(smsError(result), 'error');
+            smsSend.disabled = false;
+            smsSend.textContent = 'Recevoir le code';
+          }
+        } catch {
+          smsSay('Connexion impossible au service SMS. Vérifiez votre connexion puis réessayez.', 'error');
+          smsSend.disabled = false;
+          smsSend.textContent = 'Recevoir le code';
+        } finally { smsBusy = false; }
+      });
+      smsCode.addEventListener('input', () => {
+        smsCode.value = smsCode.value.replace(/\D/g, '').slice(0, 6);
+      });
+      const verify = async () => {
+        if (smsBusy) return;
+        const tel = document.getElementById('tel');
+        const number = smsPhone(tel.value);
+        const code = smsCode.value.replace(/\D/g, '');
+        if (!requestedPhone || number !== requestedPhone) {
+          smsSay('Le numéro a changé. Demandez un nouveau code.', 'error');
+          return;
+        }
+        if (code.length !== 6) { smsSay('Le code comporte 6 chiffres.', 'error'); return; }
+        smsBusy = true;
+        smsCheck.disabled = true;
+        try {
+          const result = await smsRequest({ action: 'verifier_code', telephone: number, code });
+          if (!smsFailed(result)) {
+            verifiedPhone = number;
+            smsStopCountdown();
+            smsRow.hidden = true;
+            smsSend.hidden = true;
+            smsSay('');
+            smsVerified();
+            markError('telephone', '');
+          } else {
+            smsSay(smsError(result), 'error');
+            if (result.status === 404) {
+              smsStopCountdown();
+              smsSend.disabled = false;
+              smsSend.textContent = 'Recevoir le code';
+            }
+          }
+        } catch {
+          smsSay('Connexion impossible au service de vérification. Réessayez.', 'error');
+        } finally { smsBusy = false; smsCheck.disabled = false; }
+      };
+      smsCheck.addEventListener('click', verify);
+      smsCode.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); verify(); }
+      });
+    }
+    document.getElementById('tel').addEventListener('input', () => {
+      const number = smsPhone(document.getElementById('tel').value);
+      if ((verifiedPhone && number !== verifiedPhone) || (requestedPhone && number !== requestedPhone)) {
+        smsReset();
+        smsSay('Le numéro a changé. Demandez un nouveau code.', 'error');
+      }
+    });
+  }
   const form = document.getElementById('lead-form');
   const card = document.getElementById('demande');
   const first = document.getElementById('step-one');
@@ -205,7 +403,11 @@
       case 'societe': return value(name) ? '' : 'Indiquez le nom de votre entreprise.';
       case 'mail': return form.elements.mail.validity.valid && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value(name)) ? '' : 'Indiquez une adresse e-mail valide.';
       case 'code_postal': return /^\d{5}$/.test(value(name)) ? '' : 'Saisissez un code postal à cinq chiffres.';
-      case 'telephone': return /^0[1-9]\d{8}$/.test(telephone()) ? '' : 'Indiquez un numéro français à dix chiffres ou au format +33.';
+      case 'telephone':
+        if (!/^0[1-9]\d{8}$/.test(telephone())) return 'Indiquez un numéro français à dix chiffres ou au format +33.';
+        // Quand le service SMS est disponible, la demande exige un numéro vérifié.
+        if (smsUrl && config.formId && verifiedPhone !== telephone()) return 'Vérifiez votre numéro par SMS avant d’envoyer la demande.';
+        return '';
       case 'consentement': return form.elements.consentement.checked ? '' : 'Votre accord est nécessaire pour traiter cette demande.';
       default: return '';
     }
@@ -245,7 +447,8 @@
     const track = trackingPayload();
     const data = {
       prenom: value('prenom'), nom: value('nom'), societe: value('societe'), code_postal: value('code_postal'),
-      mail: value('mail').toLowerCase(), telephone: telephone(), telephone_verifie: 'non',
+      mail: value('mail').toLowerCase(), telephone: telephone(),
+      telephone_verifie: verifiedPhone && verifiedPhone === telephone() ? 'oui' : 'non',
       consentement: 'oui', coordonnee: '1',
       source: track.ltm_source || track.utm_source || track.source || config.source || '',
       categorie: track.categorie || config.categorie || '',
