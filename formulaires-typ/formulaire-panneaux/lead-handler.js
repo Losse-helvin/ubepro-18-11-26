@@ -304,12 +304,6 @@ var UBE_CONFIG = {
     }
     return Object.assign({}, trackingValues);
   }
-  function getCurrentUrlCategory() {
-    var current = parseUrlParams(window.location.href);
-    var entry = parseUrlParams(entryUrl);
-    return current.categorie || current.utm_category || current.ltm_category || current.category ||
-      entry.categorie || entry.utm_category || entry.ltm_category || entry.category || '';
-  }
   function getTrackingPayload() {
     if (trackingGranted()) {
       captureTracking(entryUrl);
@@ -325,12 +319,9 @@ var UBE_CONFIG = {
     var t = getTrackingPayload();
     Object.keys(t).forEach(function (k) {
       var input = form.querySelector('input[name="' + k + '"]');
-      if (!input || !t[k]) return;
+      if (!input || input.dataset.prefill === 'false' || !t[k]) return;
       if (input.value === '' || (k === 'source' && input.value === 'SOURCE PAR DEFAUT')) input.value = t[k];
     });
-    var cat = getCurrentUrlCategory();
-    var catField = form.querySelector('input[name="categorie"]');
-    if (cat && catField && !catField.value) catField.value = cat;
     var pu = form.querySelector('input[name="page_url"]');
     if (pu) pu.value = analyticsGranted() && parentLandingUrlReceived ? clean(trackedPageUrl || entryUrl, 1000) : '';
     var rf = form.querySelector('input[name="referrer"]');
@@ -533,7 +524,7 @@ var UBE_CONFIG = {
     if (champExiste('civilite')) data.civilite = radioValue('civilite') || textValue('civilite');
     if (champExiste('siret')) data.siret = textValue('siret');
     data.source = tracking.ltm_source || tracking.utm_source || tracking.source || CONFIG.source;
-    data.categorie = getCurrentUrlCategory() || textValue('categorie') || tracking.categorie || '';
+    data.categorie = textValue('categorie');
     data.coordonnee = textValue('coordonnee') || '1';
     data.consentement = String(radioValue('consentement')).toLowerCase() === 'oui' ? 'oui' : 'non';
 
