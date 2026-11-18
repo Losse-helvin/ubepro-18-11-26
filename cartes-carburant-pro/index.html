@@ -54,6 +54,21 @@
             </div>
             <noscript><p class="notice">Activez JavaScript pour utiliser ce formulaire. Aucune donnée n’a été envoyée.</p></noscript>
             <div class="trap" aria-hidden="true" inert><label>Site internet <input name="website" tabindex="-1" autocomplete="off"></label></div>
+            <div class="tracking-fields" aria-hidden="true">
+              <input type="hidden" name="source" id="trk-source">
+              <input type="hidden" name="categorie" id="trk-categorie">
+              <input type="hidden" name="page_url" id="trk-page-url">
+              <input type="hidden" name="utm_source" id="trk-utm_source">
+              <input type="hidden" name="utm_medium" id="trk-utm_medium">
+              <input type="hidden" name="utm_campaign" id="trk-utm_campaign">
+              <input type="hidden" name="utm_content" id="trk-utm_content">
+              <input type="hidden" name="utm_term" id="trk-utm_term">
+              <input type="hidden" name="utm_id" id="trk-utm_id">
+              <input type="hidden" name="utm_category" id="trk-utm_category">
+              <input type="hidden" name="ltm_source" id="trk-ltm_source">
+              <input type="hidden" name="ltm_category" id="trk-ltm_category">
+              <input type="hidden" name="ltm_typ" id="trk-ltm_typ">
+            </div>
             <fieldset class="form-step" id="step-one" disabled><legend class="sr-only">Votre flotte</legend>
               <h2 class="form-title" tabindex="-1">Votre flotte</h2>
               <fieldset class="fleet"><legend>Nombre de véhicules à équiper</legend><div class="fleet-options">
@@ -74,7 +89,6 @@
                 <div><label class="field" for="tel">Téléphone<input id="tel" name="telephone" type="tel" autocomplete="tel" maxlength="25" required></label><p class="field-error" id="error-telephone" hidden></p></div>
               </div>
               <label class="consent"><input type="checkbox" name="consentement" value="oui" required><span>J’accepte que mes coordonnées soient transmises au partenaire chargé de mon étude pour qu’il me recontacte à ce sujet.</span></label><p class="field-error" id="error-consentement" hidden></p>
-              <label class="consent optional"><input type="checkbox" name="mesure"><span>J’autorise la mesure de l’origine de ma demande (facultatif).</span></label>
               <a class="privacy" href="https://www.ubepro.fr/politique-de-confidentialite-donnees-personnelles/" target="_blank" rel="noopener noreferrer">Utilisation de mes données<span class="sr-only"> (nouvel onglet)</span></a>
               <p id="submit-error" class="submit-error" role="alert" hidden></p>
               <div class="send-row"><button type="button" class="back" id="back">Retour</button><button type="submit" class="btn btn-orange" id="send"><span>Envoyer ma demande</span><svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></button></div>

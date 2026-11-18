@@ -1,4 +1,5 @@
-/* No cookie, third-party script or lead request on load. */
+/* Carte carburant pro : formulaire, CRM HelloLead, Google Sheet et suivi d'URL.
+   Aucun Google Tag Manager, aucun dataLayer, aucun script tiers au chargement. */
 (() => {
   'use strict';
 
@@ -18,7 +19,8 @@
       menu.focus();
     }
   });
-  // ARIA tabs: one keyboard stop, arrow keys switch profiles without moving the page.
+
+  // ARIA tabs : un seul arrêt clavier, les flèches changent de profil.
   const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
   function selectTab(selected) {
     tabs.forEach(tab => {
@@ -41,12 +43,115 @@
   });
 
   const config = window.UBE_CONFIG || {};
-  // Never send contact details in clear text, even if a deployment is misconfigured.
+
+  /* ---------------- Suivi d'URL (utm_ / ltm_), query et fragment ---------------- */
+  // Même liste de paramètres que les autres LP du dépôt. Lecture à l'arrivée,
+  // conservation en sessionStorage pour ne pas perdre la campagne après un CTA.
+  const TRACKING_KEY = 'ccp_tracking_v1';
+  const PAGE_URL_KEY = 'ccp_tracking_page_url_v1';
+  const TRACKING_PARAMS = [
+    ['source', ['source', 'utm_source', 'ltm_source']],
+    ['categorie', ['categorie', 'utm_category', 'ltm_category', 'category']],
+    ['utm_source', ['utm_source', 'ltm_source', 'source']],
+    ['utm_medium', ['utm_medium', 'medium']],
+    ['utm_campaign', ['utm_campaign', 'campaign']],
+    ['utm_content', ['utm_content', 'content']],
+    ['utm_term', ['utm_term', 'term']],
+    ['utm_id', ['utm_id', 'campaign_id']],
+    ['utm_category', ['utm_category', 'ltm_category', 'categorie', 'category']],
+    ['ltm_source', ['ltm_source', 'utm_source', 'source']],
+    ['ltm_category', ['ltm_category', 'utm_category', 'categorie', 'category']],
+    ['ltm_typ', ['ltm_typ', 'utm_typ', 'typ']]
+  ];
+  function cleanValue(value, limit = 160) {
+    return String(value == null ? '' : value).replace(/\s+/g, ' ').replace(/[<>]/g, '').trim().slice(0, limit);
+  }
+  function readStored(key) {
+    try { return JSON.parse(window.sessionStorage.getItem(key) || '{}') || {}; } catch { return {}; }
+  }
+  function storeTracking(values) {
+    try { window.sessionStorage.setItem(TRACKING_KEY, JSON.stringify(values)); } catch { /* mode privé */ }
+  }
+  function parseParams(rawUrl) {
+    const params = Object.create(null);
+    try {
+      const url = new URL(rawUrl || window.location.href, window.location.href);
+      function collect(search) {
+        new URLSearchParams(search || '').forEach((value, key) => {
+          const name = String(key).trim().toLowerCase();
+          const clean = cleanValue(value);
+          if (name && clean) params[name] = clean;
+        });
+      }
+      collect(url.search);
+      const hash = url.hash.slice(1);
+      const separator = hash.indexOf('?');
+      collect(separator >= 0 ? hash.slice(separator + 1) : (hash.includes('=') && !hash.startsWith('/') ? hash : ''));
+    } catch { /* URL inhabituelle : aucun paramètre */ }
+    return params;
+  }
+  // L'URL d'arrivée n'est pas toujours lisible après un CTA interne (#demande) :
+  // l'entrée de navigation garde alors la campagne d'origine.
+  function entryUrl() {
+    try {
+      return window.performance.getEntriesByType('navigation')[0].name || window.location.href;
+    } catch { return window.location.href; }
+  }
+  let tracking = readStored(TRACKING_KEY);
+  let trackedPageUrl = (() => {
+    try { return window.sessionStorage.getItem(PAGE_URL_KEY) || ''; } catch { return ''; }
+  })();
+  function captureTracking(rawUrl) {
+    const params = parseParams(rawUrl);
+    const found = {};
+    TRACKING_PARAMS.forEach(([key, aliases]) => {
+      const alias = aliases.find(name => params[name]);
+      if (alias) found[key] = params[alias];
+    });
+    if (Object.keys(found).length) {
+      tracking = { ...tracking, ...found };
+      storeTracking(tracking);
+      trackedPageUrl = cleanValue(rawUrl || window.location.href, 1000);
+      try { window.sessionStorage.setItem(PAGE_URL_KEY, trackedPageUrl); } catch { /* mode privé */ }
+    }
+    return found;
+  }
+  function trackingPayload() {
+    captureTracking(window.location.href);
+    captureTracking(entryUrl());
+    const values = {};
+    TRACKING_PARAMS.forEach(([key]) => { if (tracking[key]) values[key] = tracking[key]; });
+    return values;
+  }
+  const pageUrl = () => {
+    const url = trackedPageUrl || window.location.href;
+    try {
+      const clean = new URL(url);
+      return cleanValue(clean.origin + clean.pathname + clean.search, 1000);
+    } catch { return cleanValue(url, 1000); }
+  };
+
+  // Champs masqués du formulaire : le suivi accompagne la demande sans être saisi.
+  function fillHiddenFields() {
+    const values = { ...trackingPayload(), page_url: pageUrl() };
+    document.querySelectorAll('.tracking-fields input[name]').forEach(input => {
+      const value = values[input.name];
+      input.value = value ? cleanValue(value, 1000) : '';
+    });
+  }
+  fillHiddenFields();
+
+  /* ---------------- Formulaire ---------------- */
   let endpoint;
   try {
     const url = new URL(config.leadApiUrl);
     if (url.protocol === 'https:' && !url.username && !url.password) endpoint = url.href;
-  } catch { /* Missing endpoint: leave contact collection closed. */ }
+  } catch { /* URL absente : collecte fermée */ }
+  let sheetUrl;
+  try {
+    const url = new URL(config.googleScriptUrl);
+    if (url.protocol === 'https:' && !url.username && !url.password) sheetUrl = url.href;
+  } catch { /* feuille absente : seul le CRM est utilisé */ }
   const canSend = Boolean(typeof config.formId === 'string' && config.formId.trim() && endpoint);
   const form = document.getElementById('lead-form');
   const card = document.getElementById('demande');
@@ -86,8 +191,11 @@
     });
   });
 
-  function value(name) { return form.elements.namedItem(name).value.trim(); }
-  function telephone() { return value('telephone').replace(/[\s().-]/g, '').replace(/^(\+33|0033)0?/, '0'); }
+  function value(name) {
+    const field = form.elements.namedItem(name);
+    return field ? String(field.value || '').trim() : '';
+  }
+  function telephone() { return value('telephone').replace(/[\s().-]/g, '').replace(/^(?:\+33|0033)0?/, '0'); }
   function message(name) {
     switch (name) {
       case 'reponse_1': return value(name) ? '' : 'Choisissez la taille de votre parc.';
@@ -132,30 +240,16 @@
     if (event.target.getAttribute('aria-invalid') === 'true') markError(name, message(name));
   });
 
-  // Only existing CRM attribution fields, only after a separate optional opt-in.
-  // Do not copy a raw URL, click ID or any contact information into analytics.
-  function attribution() {
-    const url = new URL(window.location.href);
-    // An in-page CTA replaces a campaign fragment with e.g. #demande. Read
-    // the browser's original navigation URL only here, after measurement opt-in.
-    const arrival = performance.getEntriesByType?.('navigation')[0]?.name;
-    const fragmentUrl = !url.hash.includes('=') && arrival ? new URL(arrival, url) : url;
-    const hash = fragmentUrl.hash.slice(1);
-    const fragment = new URLSearchParams(hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : hash);
-    const tracking = {};
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'utm_category',
-      'ltm_source', 'ltm_category', 'ltm_typ'].forEach(key => {
-      const raw = url.searchParams.get(key) || fragment.get(key);
-      if (raw) tracking[key] = raw.trim().replace(/[<>]/g, '').slice(0, 160);
-    });
-    return tracking;
-  }
-  function leadData(measure) {
-    const tracking = measure ? attribution() : {};
+  /* ---------------- Données du lead ---------------- */
+  function leadData() {
+    const track = trackingPayload();
     const data = {
       prenom: value('prenom'), nom: value('nom'), societe: value('societe'), code_postal: value('code_postal'),
-      mail: value('mail').toLowerCase(), telephone: telephone(), telephone_verifie: 'non', consentement: 'oui', coordonnee: '1',
-      source: tracking.ltm_source || tracking.utm_source || '', categorie: config.categorie || '', ...tracking
+      mail: value('mail').toLowerCase(), telephone: telephone(), telephone_verifie: 'non',
+      consentement: 'oui', coordonnee: '1',
+      source: track.ltm_source || track.utm_source || track.source || config.source || '',
+      categorie: track.categorie || config.categorie || '',
+      ...track
     };
     const recap = [];
     questions.forEach((question, i) => {
@@ -165,7 +259,32 @@
       if (answer) recap.push(`${question} : ${answer}`);
     });
     data.autre_info_fj = recap.join('\n');
+    data.page_url = pageUrl();
+    data.page_referrer = cleanValue(document.referrer, 1000);
+    data.user_agent = cleanValue(navigator.userAgent, 300);
+    data.langue = cleanValue(navigator.language || '', 20);
     return data;
+  }
+  // Même feuille plate que les autres LP du dépôt (champs form-urlencoded).
+  function sheetData(data) {
+    return {
+      form_id: config.formId,
+      form_name: config.formName || '',
+      id_lead: submissionId,
+      nom: data.nom, prenom: data.prenom, mail: data.mail, telephone: data.telephone,
+      telephone_verifie: data.telephone_verifie, societe: data.societe, code_postal: data.code_postal,
+      question_1: data.question_1, reponse_1: data.reponse_1,
+      question_2: data.question_2, reponse_2: data.reponse_2,
+      question_3: data.question_3, reponse_3: data.reponse_3,
+      autre_info_fj: data.autre_info_fj,
+      source: data.source, categorie: data.categorie,
+      utm_source: data.utm_source || '', utm_medium: data.utm_medium || '', utm_campaign: data.utm_campaign || '',
+      utm_content: data.utm_content || '', utm_term: data.utm_term || '', utm_id: data.utm_id || '',
+      utm_category: data.utm_category || '',
+      ltm_source: data.ltm_source || '', ltm_category: data.ltm_category || '', ltm_typ: data.ltm_typ || '',
+      page_url: data.page_url, page_referrer: data.page_referrer,
+      user_agent: data.user_agent, langue: data.langue
+    };
   }
   function makeId() {
     if (window.crypto.randomUUID) return window.crypto.randomUUID();
@@ -173,35 +292,58 @@
     bytes[6] = (bytes[6] & 15) | 64;
     bytes[8] = (bytes[8] & 63) | 128;
     const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-    return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-');
+    return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
   }
-  async function sendLead(data) {
+
+  /* ---------------- Envois ---------------- */
+  // CRM : enveloppe HelloLead identique aux autres LP. En mode "nocors" le
+  // navigateur ne peut pas lire la réponse : l'envoi reste non confirmé. C'est
+  // l'accusé du Google Sheet qui confirme la réception.
+  async function sendCrm(data) {
+    const body = JSON.stringify({ payload: { formId: config.formId, id: submissionId, data } });
+    if (config.leadApiMode === 'cors') {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST', mode: 'cors', credentials: 'omit', cache: 'no-store', redirect: 'error',
+          referrerPolicy: 'no-referrer', headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+          signal: controller.signal, body
+        });
+        const json = await response.json().catch(() => null);
+        if (!response.ok || json?.status !== 'ok') throw new Error('CRM sans accusé positif');
+        return { target: 'crm', state: 'ok' };
+      } finally { clearTimeout(timer); }
+    }
+    // keepalive : le POST survit à une navigation. Une coupure réseau est
+    // détectée (contrairement à sendBeacon) et donne un message honnête.
+    // Le délai évite un formulaire bloqué si le CRM ne répond jamais.
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timer = setTimeout(() => controller.abort(), 12000);
     try {
-      // Same HelloLead envelope as the repository's CORS handlers. Reuse the ID on retry.
-      submissionId = submissionId || makeId();
-      const response = await fetch(endpoint, {
-        method: 'POST', mode: 'cors', credentials: 'omit', cache: 'no-store', redirect: 'error',
-        referrerPolicy: 'no-referrer', headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        signal: controller.signal, body: JSON.stringify({ payload: { formId: config.formId, id: submissionId, data } })
+      await fetch(endpoint, {
+        method: 'POST', mode: 'no-cors', credentials: 'omit', cache: 'no-store',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body, keepalive: true,
+        signal: controller.signal
       });
-      if (!response.ok || (await response.json())?.status !== 'ok') throw new Error('CRM receipt missing');
-    } finally { clearTimeout(timeout); }
+    } finally { clearTimeout(timer); }
+    return { target: 'crm', state: 'unverified', via: 'fetch-no-cors' };
   }
-  function recordConversion(data) {
-    const id = config.gtmContainerId;
-    if (!/^GTM-[A-Z0-9]+$/.test(id || '')) return;
-    const layer = window.dataLayer = window.dataLayer || [];
-    function consentCommand() { layer.push(arguments); }
-    consentCommand('consent', 'default', { analytics_storage: 'granted', ad_storage: 'denied',
-      ad_user_data: 'denied', ad_personalization: 'denied' });
-    layer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
-    const tag = document.createElement('script');
-    tag.async = true;
-    tag.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(id);
-    document.head.appendChild(tag);
-    layer.push({ event: 'formulaire_lead', form_id: config.formId, lead_source: data.source, categorie: data.categorie });
+  // Google Sheet : script Apps Script partagé du dépôt, réponse JSON vérifiée.
+  async function sendSheet(data) {
+    if (!sheetUrl) throw new Error('URL Google Apps Script absente');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), config.sheetTimeoutMs || 15000);
+    const body = new URLSearchParams();
+    Object.entries(sheetData(data)).forEach(([key, raw]) => body.append(key, String(raw == null ? '' : raw)));
+    try {
+      const response = await fetch(sheetUrl, {
+        method: 'POST', mode: 'cors', credentials: 'omit', cache: 'no-store', body, signal: controller.signal
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || json?.status !== 'ok') throw new Error((json && json.message) || 'Google Sheet sans accusé positif');
+      return { target: 'sheet', state: 'ok' };
+    } finally { clearTimeout(timer); }
   }
   function submitError(text) {
     errorBox.textContent = text;
@@ -217,32 +359,46 @@
     if (!canSend) { submitError('La prise de contact en ligne n’est pas ouverte. Aucune donnée n’a été envoyée.'); return; }
     if (value('website')) { submitError('La demande ne peut pas être transmise.'); return; }
     if (!validate(['prenom', 'nom', 'societe', 'code_postal', 'mail', 'telephone', 'consentement'])) return;
-    const measure = form.elements.mesure.checked;
-    const data = leadData(measure);
+    fillHiddenFields();
+    const data = leadData();
+    submissionId = submissionId || makeId();
+    const results = [];
     sending = true;
     second.disabled = true;
     form.setAttribute('aria-busy', 'true');
     sendLabel.textContent = 'Envoi en cours…';
     errorBox.hidden = true;
-    try {
-      await sendLead(data);
-    } catch {
+    const attempt = promise => promise.then(result => result, () => ({ state: 'error' }));
+    const crmDelivery = attempt(sendCrm(data));
+    const sheetDelivery = attempt(sendSheet(data));
+    // Le premier accusé positif suffit pour afficher la confirmation ; l'autre
+    // envoi continue en arrière-plan. Sans aucun accusé, message d'échec.
+    const confirmed = await new Promise(resolve => {
+      let pending = 2;
+      const settle = result => {
+        results.push(result);
+        pending -= 1;
+        if (result.state === 'ok') resolve(true);
+        else if (pending === 0) resolve(false);
+      };
+      crmDelivery.then(settle);
+      sheetDelivery.then(settle);
+    });
+    sending = false;
+    second.disabled = false;
+    form.removeAttribute('aria-busy');
+    sendLabel.textContent = 'Envoyer ma demande';
+    // Aucun succès affiché sans accusé de réception d'une destination.
+    if (!confirmed) {
       submitError('L’envoi n’a pas pu être confirmé. Vos réponses restent sur cette page ; vous pouvez réessayer.');
       return;
-    } finally {
-      sending = false;
-      second.disabled = false;
-      form.removeAttribute('aria-busy');
-      sendLabel.textContent = 'Envoyer ma demande';
     }
     form.reset();
     form.hidden = true;
     confirmation.hidden = false;
     confirmation.focus();
-    if (measure) recordConversion(data);
   });
-  // Enable the form only after attaching the submit handler. Without a campaign
-  // ID the project can be explored, but no personal data is requested or sent.
+  // Le formulaire n'est activé qu'après l'attachement des gestionnaires.
   first.disabled = false;
   second.disabled = false;
   if (!canSend) {
@@ -250,4 +406,10 @@
     send.disabled = true;
     document.getElementById('not-configured').hidden = false;
   }
+  // API de contrôle pour la recette locale, sans aucun effet sur la page.
+  window.UBEPRO_CARBURANT = Object.freeze({
+    tracking: () => ({ ...trackingPayload() }),
+    pageUrl,
+    lastSubmissionId: () => submissionId || null
+  });
 })();
