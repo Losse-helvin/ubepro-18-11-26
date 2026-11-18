@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#142535">
+  <title>Sillage — Carte carburant pour les professionnels</title>
+  <meta name="description" content="Artisan, PME ou gestionnaire de flotte : étudiez une carte carburant adaptée à vos véhicules, à vos trajets et à votre gestion des dépenses. Demande sans engagement.">
+  <link rel="icon" type="image/svg+xml" href="img/sillage.svg">
+  <link rel="preload" href="assets/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body id="haut">
+  <a class="skip" href="#contenu">Aller au contenu</a>
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="out" viewBox="0 0 24 24"><path d="M6 18 18 6M7 6h11v11"/></symbol>
+    <symbol id="down" viewBox="0 0 24 24"><path d="M12 4v15m-6-6 6 6 6-6"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="briefcase" viewBox="0 0 24 24"><rect x="2.5" y="6.8" width="19" height="14" rx="2"/><path d="M8 6.5V4.8c0-.9.7-1.6 1.6-1.6h4.8c.9 0 1.6.7 1.6 1.6v1.7M3 12c5.5 2.4 12.5 2.4 18 0M12 12.5v2.5"/></symbol>
+    <symbol id="van" viewBox="0 0 24 24"><path d="M2 17V6.5c0-.8.7-1.5 1.5-1.5H15v12m0-10h3l4 5v5h-2.5M2 17h2.5m4 0h7.5M16 9v3h5"/><circle cx="6.5" cy="17.2" r="2.2"/><circle cx="17.8" cy="17.2" r="2.2"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24"><path d="m12 2.5 8 3v6c0 4.3-3.4 7.5-8 10-4.6-2.5-8-5.7-8-10v-6z"/><path d="m8.5 11.5 2.4 2.4 4.8-5"/></symbol>
+    <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+    <symbol id="chip" viewBox="0 0 40 29"><rect x="1" y="1" width="38" height="27" rx="5" fill="#d7c6a1" stroke="none"/><g stroke="#786e5d" stroke-width="1"><path d="M1 10h10m18 0h10M1 19h10m18 0h10M11 1v6l5 3v9l-5 3v6M29 1v6l-5 3v9l5 3v6M16 10h8m-8 9h8"/></g></symbol>
+    <symbol id="contactless" viewBox="0 0 24 24"><path d="M6 9c1.6 1.6 1.6 4.4 0 6m3-9c3.3 3.4 3.3 8.6 0 12m3-15c5 5 5 13 0 18m3-21c6.8 6.8 6.8 17.2 0 24"/></symbol>
+  </svg>
+  <header class="site-head">
+    <div class="wrap head-inner">
+      <a href="#haut" class="brand" aria-label="Sillage Mobilité pro, accueil"><img src="img/sillage.svg" width="40" height="35" alt=""><span class="brand-type">Sillage<span>Mobilité pro</span></span></a>
+      <nav id="navigation" aria-label="Navigation principale"><a href="#avantages">Les avantages</a><a href="#fonctionnement">Comment ça marche</a><a href="#faq">FAQ</a></nav>
+      <div class="head-actions"><a class="btn btn-dark head-cta" href="#demande">Demander une étude <svg class="icon" aria-hidden="true" focusable="false"><use href="#out"/></svg></a><button class="menu-toggle" type="button" aria-label="Menu de navigation" aria-expanded="false" aria-controls="navigation"><svg class="icon" aria-hidden="true" focusable="false"><use href="#menu"/></svg></button></div>
+    </div>
+  </header>
+  <main id="contenu">
+    <section class="hero" aria-labelledby="titre">
+      <picture class="hero-photo"><source media="(max-width: 700px)" srcset="img/station-mobile.webp"><img src="img/station.webp" width="1983" height="793" fetchpriority="high" alt="Un utilitaire à la pompe, sous l’auvent éclairé d’une station-service."></picture>
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <p class="hero-tag"><i></i> Carte carburant professionnelle</p>
+          <h1 id="titre">Votre carburant,<br><span>sous contrôle.</span></h1>
+          <p class="intro">Regroupez les pleins de vos équipes et simplifiez le suivi de vos dépenses avec une carte adaptée à votre flotte.</p>
+          <div class="hero-actions"><a class="btn btn-orange" href="#demande">Étudier mon projet <svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></a><a class="hero-more" href="#avantages">Les avantages <svg class="icon" aria-hidden="true" focusable="false"><use href="#down"/></svg></a></div>
+        </div>
+        <figure class="card-scene" aria-label="Illustration d’une carte carburant professionnelle">
+          <div class="fuel-card" aria-hidden="true"><div class="card-top"><span class="card-logo"><img src="img/sillage.svg" width="24" height="21" alt=""> Sillage</span><span class="card-pro">PRO</span></div><div class="card-chip"><svg><use href="#chip"/></svg><svg class="icon" aria-hidden="true" focusable="false"><use href="#contactless"/></svg></div><div class="card-foot"><span>Carte carburant</span><span>Usage professionnel</span></div></div>
+          <figcaption>Visuel illustratif</figcaption>
+        </figure>
+      </div>
+    </section>
+    <div class="trust-strip" aria-label="À retenir"><div class="wrap trust-inner">
+      <span><svg class="icon" aria-hidden="true" focusable="false"><use href="#briefcase"/></svg> Réservé aux professionnels</span><span><svg class="icon" aria-hidden="true" focusable="false"><use href="#van"/></svg> Dès le premier véhicule</span><span><svg class="icon" aria-hidden="true" focusable="false"><use href="#shield"/></svg> Demande sans engagement</span>
+    </div></div>
+    <section class="benefits section" id="avantages" aria-labelledby="titre-avantages">
+      <div class="wrap">
+        <p class="eyebrow"><b>01</b><i></i> Les avantages</p>
+        <div class="section-intro"><h2 id="titre-avantages">Moins de gestion, plus de visibilité.</h2><p>Sur la route comme au bureau, partez des usages qui comptent vraiment pour votre entreprise.</p></div>
+        <div class="benefit-grid">
+          <article class="benefit"><div class="benefit-img"><img src="img/justificatifs.webp" width="820" height="410" loading="lazy" alt="Des tickets de carburant sur le tableau de bord d’un véhicule."><span>Administration</span></div><div class="benefit-body"><h3>Rassemblez les justificatifs</h3><p>Plutôt que de courir après les tickets, appuyez votre comptabilité sur un relevé des pleins effectués avec la carte.</p></div></article>
+          <article class="benefit"><div class="benefit-img"><img src="img/plein.webp" width="820" height="410" loading="lazy" alt="Un professionnel fait le plein de son utilitaire."><span>Pilotage</span></div><div class="benefit-body"><h3>Gardez le fil des dépenses</h3><p>Identifiez les transactions de chaque véhicule. Selon la formule, des plafonds permettent aussi d’encadrer les achats.</p></div></article>
+          <article class="benefit"><div class="benefit-img"><img src="img/trajets.webp" width="820" height="410" loading="lazy" alt="Vue aérienne d’un utilitaire sur une route de campagne."><span>Mobilité</span></div><div class="benefit-body"><h3>Partez de vos itinéraires</h3><p>Chantiers, tournées, livraisons : vérifiez les stations acceptées sur vos axes habituels avant de choisir une carte.</p></div></article>
+        </div>
+      </div>
+    </section>
+    <section class="activity section" aria-labelledby="titre-activite">
+      <div class="wrap activity-layout">
+        <div class="activity-intro"><p class="eyebrow"><b>02</b><i></i> Votre activité</p><h2 id="titre-activite">À chaque métier,<br>sa route.</h2><p class="section-text">Une tournée locale et un parc itinérant n’ont pas les mêmes contraintes. Choisissez votre profil.</p>
+          <div class="profiles" role="tablist" aria-label="Votre profil professionnel">
+            <button type="button" role="tab" id="tab-independant" aria-selected="true" aria-controls="profil-independant">Artisans &amp; indépendants</button>
+            <button type="button" role="tab" id="tab-pme" aria-selected="false" tabindex="-1" aria-controls="profil-pme">TPE &amp; PME</button>
+            <button type="button" role="tab" id="tab-transport" aria-selected="false" tabindex="-1" aria-controls="profil-transport">Flottes &amp; transport</button>
+          </div>
+        </div>
+        <div class="logbook"><div class="logbook-head"><span><i></i> Carnet de route</span><span>Itinéraire type</span></div>
+          <svg class="route-art" viewBox="0 0 420 65" aria-hidden="true" preserveAspectRatio="none"><g fill="none" stroke="#3d5260" stroke-width="1"><path d="M-20 44 90 5h135l49 55h180M40 80l73-45h95l40-50m95 0-45 89M126-15l19 28 62 22h214M-10 17l90 48h80"/></g><path d="M22 46h82c20 0 17-22 40-22h58c22 0 26 21 47 21h51c17 0 22-27 45-27h50" fill="none" stroke="#ff8755" stroke-width="3"/><g stroke="#ff8755" stroke-width="2.3" fill="#192e3f"><circle cx="22" cy="46" r="5"/><circle cx="395" cy="18" r="5"/></g></svg>
+          <div class="profile-panel" role="tabpanel" id="profil-independant" aria-labelledby="tab-independant" tabindex="0"><p class="route-label">Atelier <span>→</span> Chantier</p><h3>Votre utilitaire, votre outil de travail.</h3><p>Repérez les stations proches de vos chantiers et séparez les pleins professionnels des dépenses personnelles.</p><a class="text-link" href="#demande" data-activity="Artisan ou indépendant">Étudier mon usage <svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></a></div>
+          <div class="profile-panel" role="tabpanel" id="profil-pme" aria-labelledby="tab-pme" tabindex="0" hidden><p class="route-label">Bureau <span>→</span> Rendez-vous client</p><h3>Plusieurs conducteurs, une vue d’ensemble.</h3><p>Pour vos équipes commerciales ou techniques, précisez qui roule, où, et comment rapprocher les pleins de chaque véhicule.</p><a class="text-link" href="#demande" data-activity="TPE ou PME">Étudier mon usage <svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></a></div>
+          <div class="profile-panel" role="tabpanel" id="profil-transport" aria-labelledby="tab-transport" tabindex="0" hidden><p class="route-label">Dépôt <span>→</span> Point de livraison</p><h3>Des tournées à suivre, véhicule par véhicule.</h3><p>Indiquez vos axes de circulation et vos types de véhicules pour examiner le réseau, les plafonds et le détail des relevés proposés.</p><a class="text-link" href="#demande" data-activity="Gestion de flotte ou transport">Étudier mon usage <svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></a></div>
+        </div>
+      </div>
+    </section>
+    <section class="request section" id="fonctionnement" aria-labelledby="titre-parcours"><div class="wrap request-layout">
+      <div class="request-copy"><p class="eyebrow"><b>03</b><i></i> Comment ça marche</p><h2 id="titre-parcours">Parlons de<br>votre flotte.</h2><ol class="steps"><li><h3>Décrivez votre parc</h3><p>Quelques indications sur votre activité et le nombre de véhicules à équiper suffisent pour commencer.</p></li><li><h3>Examinez la formule</h3><p>Un conseiller étudie avec vous les stations utiles, les frais et les modalités de facturation.</p></li><li><h3>Décidez en connaissance de cause</h3><p>Vous choisissez de poursuivre ou non. La demande d’étude ne commande aucune carte.</p></li></ol></div>
+      <div class="form-card" id="demande" tabindex="-1">
+        <form method="post" id="lead-form" novalidate aria-label="Demander une étude de carte carburant">
+          <div class="form-top"><span class="form-kicker">Mon étude personnalisée</span><span id="progress-label" aria-live="polite">Étape 1 sur 2</span></div><div class="progress" aria-hidden="true"><i></i><i></i></div>
+          <noscript><p class="notice">Activez JavaScript pour utiliser ce formulaire. Aucune donnée n’a été envoyée.</p></noscript>
+          <div class="trap" aria-hidden="true" inert><label>Site internet <input name="website" tabindex="-1" autocomplete="off"></label></div>
+          <fieldset class="form-step" id="step-one" disabled><legend class="sr-only">Votre flotte</legend>
+            <h3 class="form-title" tabindex="-1">Votre flotte</h3>
+            <fieldset class="fleet"><legend>Combien de véhicules souhaitez-vous équiper&nbsp;?</legend><div class="fleet-options">
+              <label><input type="radio" name="reponse_1" value="1 véhicule" required><span>1 véhicule</span></label><label><input type="radio" name="reponse_1" value="2 à 10 véhicules"><span>2 à 10</span></label><label><input type="radio" name="reponse_1" value="11 à 50 véhicules"><span>11 à 50</span></label><label><input type="radio" name="reponse_1" value="Plus de 50 véhicules"><span>Plus de 50</span></label>
+            </div><p class="field-error" id="error-reponse_1" hidden></p></fieldset>
+            <label class="field" for="activite">Votre activité<select id="activite" name="reponse_2" required><option value="">Sélectionner votre activité</option><option>Artisan ou indépendant</option><option>TPE ou PME</option><option>Gestion de flotte ou transport</option><option>Autre activité professionnelle</option></select></label><p class="field-error" id="error-reponse_2" hidden></p>
+            <label class="field" for="besoin">Votre priorité <small>(facultatif)</small><select id="besoin" name="reponse_3"><option value="">À préciser lors de l’échange</option><option>Simplifier la comptabilité</option><option>Suivre mon budget carburant</option><option>Vérifier le réseau de stations</option><option>Revoir ma solution actuelle</option></select></label>
+            <button class="btn btn-orange form-next" type="submit">Continuer <svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></button><p class="form-note"><svg class="icon" aria-hidden="true" focusable="false"><use href="#lock"/></svg> Aucun paiement ni RIB demandé.</p>
+          </fieldset>
+          <fieldset class="form-step" id="step-two" hidden disabled><legend class="sr-only">Vos coordonnées professionnelles</legend><h3 class="form-title" tabindex="-1">Vos coordonnées</h3><p class="form-sub">Pour échanger au sujet de votre projet professionnel.</p>
+            <p class="notice" id="not-configured" hidden>La prise de contact en ligne n’est pas encore ouverte. Aucune donnée ne sera transmise.</p>
+            <div class="field-grid">
+              <div><label class="field" for="prenom">Prénom<input id="prenom" name="prenom" autocomplete="given-name" maxlength="80" required></label><p class="field-error" id="error-prenom" hidden></p></div>
+              <div><label class="field" for="nom">Nom<input id="nom" name="nom" autocomplete="family-name" maxlength="80" required></label><p class="field-error" id="error-nom" hidden></p></div>
+              <div><label class="field" for="societe">Entreprise<input id="societe" name="societe" autocomplete="organization" maxlength="160" required></label><p class="field-error" id="error-societe" hidden></p></div>
+              <div><label class="field" for="cp">Code postal<input id="cp" name="code_postal" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" required></label><p class="field-error" id="error-code_postal" hidden></p></div>
+              <div><label class="field" for="mail">E-mail professionnel<input id="mail" name="mail" type="email" autocomplete="email" maxlength="254" required></label><p class="field-error" id="error-mail" hidden></p></div>
+              <div><label class="field" for="tel">Téléphone<input id="tel" name="telephone" type="tel" autocomplete="tel" maxlength="25" required></label><p class="field-error" id="error-telephone" hidden></p></div>
+            </div>
+            <label class="consent"><input type="checkbox" name="consentement" value="oui" required><span>J’accepte que mes coordonnées soient transmises au partenaire chargé d’étudier ma demande pour qu’il puisse me recontacter.</span></label><p class="field-error" id="error-consentement" hidden></p>
+            <label class="consent optional"><input type="checkbox" name="mesure"><span>J’autorise la mesure de l’origine de ma demande (facultatif).</span></label>
+            <a class="privacy" href="https://www.ubepro.fr/politique-de-confidentialite-donnees-personnelles/" target="_blank" rel="noopener noreferrer">Utilisation de mes données<span class="sr-only"> (nouvel onglet)</span></a>
+            <p id="submit-error" class="submit-error" role="alert" hidden></p>
+            <div class="send-row"><button type="button" class="back" id="back">Retour</button><button type="submit" class="btn btn-orange" id="send"><span>Envoyer ma demande</span><svg class="icon" aria-hidden="true" focusable="false"><use href="#arrow"/></svg></button></div>
+          </fieldset>
+        </form>
+        <div class="success" id="confirmation" tabindex="-1" hidden><span class="success-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#check"/></svg></span><p class="form-kicker">Votre étude</p><h3>Demande transmise.</h3><p>Votre projet a bien été reçu. Un conseiller pourra vous recontacter aux coordonnées indiquées pour examiner vos besoins.</p><a class="text-link" href="#haut">Revenir en haut <svg class="icon" aria-hidden="true" focusable="false"><use href="#out"/></svg></a></div>
+      </div>
+    </div></section>
+    <section class="faq section" id="faq" aria-labelledby="titre-faq"><div class="wrap faq-layout">
+      <div><p class="eyebrow"><b>04</b><i></i> FAQ</p><h2 id="titre-faq">Avant de <br>prendre la route.</h2></div>
+      <div class="faq-list">
+        <details><summary>Puis-je faire une demande pour un seul véhicule&nbsp;?</summary><p>Oui. L’étude est destinée aux professionnels, y compris aux indépendants qui utilisent un seul véhicule pour leur activité.</p></details>
+        <details><summary>La carte fonctionne-t-elle dans toutes les stations&nbsp;?</summary><p>Pas nécessairement. Chaque formule a son réseau d’acceptation. Indiquez vos trajets récurrents pour vérifier les stations utiles à vos conducteurs.</p></details>
+        <details><summary>Combien coûte une carte carburant&nbsp;?</summary><p>Le prix dépend du contrat, du nombre de cartes et des services retenus. Demandez le détail des frais fixes et des frais à l’usage ; aucune remise n’est présumée dans cette étude.</p></details>
+        <details><summary>Comment se déroule le premier plein&nbsp;?</summary><p>Après souscription et activation, le conducteur présente sa carte dans une station acceptée et suit les instructions de paiement. Les transactions sont ensuite regroupées selon les modalités du contrat.</p></details>
+        <details><summary>Ma demande m’engage-t-elle à souscrire&nbsp;?</summary><p>Non. Ce formulaire sert à préparer un échange. Aucune carte n’est commandée et aucun prélèvement n’est déclenché par votre demande.</p></details>
+      </div>
+    </div></section>
+  </main>
+  <footer><div class="wrap footer-inner"><a href="#haut" class="brand" aria-label="Sillage Mobilité pro, retour en haut"><img src="img/sillage.svg" width="34" height="30" alt=""><span class="brand-type">Sillage<span>Mobilité pro</span></span></a><p>Cartes carburant pour les professionnels</p><div class="legal"><a href="https://www.ubepro.fr/mentions-legales/">Mentions légales</a><a href="https://www.ubepro.fr/politique-de-confidentialite-donnees-personnelles/">Confidentialité</a></div><a class="to-top" href="#haut" aria-label="Retour en haut de page"><svg class="icon" aria-hidden="true" focusable="false"><use href="#down"/></svg></a></div></footer>
+</body>
+</html>
