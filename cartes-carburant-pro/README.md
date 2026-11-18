@@ -51,6 +51,8 @@ python3 -m http.server 8000 --bind 0.0.0.0 --directory cartes-carburant-pro
 - **TotalEnergies Fleet** : distinguer les usages et la taille du parc avant le parcours commercial. Le formulaire distingue le besoin, l’entreprise et le contact ; une simple étude ne nécessite pas de reprendre tous les champs de souscription. [2](https://services.totalenergies.fr/professionnels/conseils/gestion-flotte/avantages-carte-carburant-criteres-choix) [4](https://services.totalenergies.fr/professionnels/gestion-flotte/formulaire/contact-mobility)
 - **Ticket Fleet Pro** : guidage par nombre de véhicules, énergie et besoin, avec un réseau à apprécier en fonction des déplacements. Retenir cette logique de choix, pas les économies chiffrées ni l’identité visuelle. [2](https://www.edenred.fr/ticket-fleet-pro)
 
+**Textes :** relecture complète des titres, sous-titres, CTA, descriptions, profils et FAQ. Aucun tiret cadratin, double tiret ou trait décoratif ne sert de séparateur ; les numéros d’index, pastilles et barres ornementales des surtitres ont été retirés au profit du seul libellé de section. Les phrases restent courtes et concrètes, sans superlatif ni promesse chiffrée.
+
 **Parcours :** « Votre carburant, sous contrôle. » ouvre sur une demande d’étude, pas sur une souscription. Les avantages, profils métier, étapes du parcours et FAQ restent accessibles après le hero. Aucune promesse de remise, de délai de rappel ou de couverture de réseau chiffrée.
 
 **Identité :** `img/ubepro.png` est la copie à l’identique de `assurance-tns-pro/img/674fff79418f54ebd2611b02_Ubepro-2-bleu.png` (923 × 235 px). Le header et le pied de page utilisent le fichier original, sans filtre ni déformation. La page conserve ses couleurs bleu nuit et orange, ses photographies d’illustration locales en WebP et DM Sans avec sa licence OFL.
@@ -59,7 +61,8 @@ python3 -m http.server 8000 --bind 0.0.0.0 --directory cartes-carburant-pro
 
 - À partir de 960 px, la grille réserve la gauche à l’accroche, le centre au véhicule et le haut du bloc de droite au formulaire. L’illustration de la carte déborde uniquement sur l’angle libre du panneau, jamais sur un champ. Le panneau grandit avec les erreurs, les coordonnées ou la confirmation ; pas de hauteur fixe ni de défilement interne.
 - De 681 à 959 px, l’utilitaire a une rangée sous l’accroche, à côté du formulaire. Jusqu’à 680 px, l’ordre est accroche, photo, formulaire ; le CTA permet de rejoindre directement les champs sous le header fixe. Le `<picture>` sélectionne le cadrage mobile jusqu’à 959 px.
-- La carte est purement décorative : puce, rainures et tranche, sans texte ni logo. Son pivot est à 88 % du bord supérieur, avec un aller de 5,8 s et un retour de même durée. L’inclinaison reste fixe avec `prefers-reduced-motion: reduce`.
+- La carte est décorative : puce, rainures, tranche et la seule inscription générique « carte carburant pro », sans logo, sans marque et sans promesse. Son pivot est à 88 % du bord supérieur, avec un aller de 5,8 s et un retour de même durée. L’inclinaison reste fixe avec `prefers-reduced-motion: reduce`.
+- Le panneau de demande est légèrement translucide (`rgba(250, 250, 246, .88)` et flou d’arrière-plan) alors que les champs, les choix et les boutons restent opaques : le texte garde son contraste. La largeur du panneau et celle de la carte ont été augmentées d’environ 6 % aux trois paliers d’écran.
 
 ## Recette
 
