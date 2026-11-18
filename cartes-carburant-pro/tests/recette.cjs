@@ -18,6 +18,55 @@ const dummyContainer = 'GTM-' + fixture.slice(0, 8).toUpperCase();
 const data = { prenom: 'Test', nom: 'Recette', societe: 'Entreprise de test',
   code_postal: '75011', mail: 'recette@example.test', telephone: '+33 6 00 00 00 00' };
 
+const widths = [320, 360, 390, 540, 680, 681, 768, 820, 959, 960, 1024, 1280, 1440, 1920, 2560];
+async function checkHero(page, state) {
+  for (const width of widths) {
+    await page.setViewport({ width, height: width <= 680 ? 812 : 900 });
+    const problems = await page.evaluate(() => {
+      const rect = selector => document.querySelector(selector).getBoundingClientRect();
+      const [hero, copy, photo, panel, card] = ['.hero', '.hero-copy', '.hero-photo', '#demande', '.fuel-card'].map(rect);
+      const inside = (a, b) => a.left >= b.left - 1 && a.right <= b.right + 1 && a.top >= b.top - 1 && a.bottom <= b.bottom + 1;
+      const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const issues = [];
+      if (document.documentElement.scrollWidth > innerWidth || !inside(panel, hero) || !inside(card, hero)) issues.push('débordement');
+      if (innerWidth <= 680) {
+        if (photo.top < copy.bottom - 1 || panel.top < photo.bottom - 1) issues.push('ordre accroche, véhicule, formulaire');
+      } else if (copy.right > panel.left + 1 || panel.top - hero.top > hero.height / 5) issues.push('position du formulaire');
+      if (card.left < panel.left + panel.width / 2 || card.top >= panel.top) issues.push('ancrage de la carte');
+      // The card may overlap the blank paper but never a label, progress, error or control.
+      const content = '#demande :is(.form-kicker, .step-indicator, .form-title, .field-error, .notice, .fleet, .field, button, .consent, .privacy)';
+      for (const el of document.querySelectorAll(content)) {
+        if (!el.getClientRects().length) continue;
+        const r = el.getBoundingClientRect();
+        if (!inside(r, panel) || intersects(card, r)) issues.push(el.id || el.className);
+      }
+      return issues;
+    });
+    assert.deepEqual(problems, [], `${state}, ${width} px : ${problems.join(', ')}`);
+  }
+}
+async function checkSuspension(page) {
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+  await page.waitForFunction(() => document.querySelector('.fuel-card').getAnimations().length === 1);
+  const swing = await page.$eval('.fuel-card', el => {
+    const anim = el.getAnimations()[0];
+    const css = getComputedStyle(el);
+    const frames = anim.effect.getKeyframes();
+    return { duration: anim.effect.getTiming().duration, direction: css.animationDirection, easing: css.animationTimingFunction,
+      count: css.animationIterationCount, pivotY: parseFloat(css.transformOrigin.split(' ')[1]) / el.offsetHeight,
+      start: frames[0].transform, end: frames.at(-1).transform, current: css.transform };
+  });
+  assert.ok(swing.duration >= 4000 && swing.pivotY <= .1);
+  assert.equal(swing.direction, 'alternate'); assert.equal(swing.easing, 'ease-in-out');
+  assert.equal(swing.count, 'infinite'); assert.notEqual(swing.start, swing.end);
+  await page.waitForFunction(before => getComputedStyle(document.querySelector('.fuel-card')).transform !== before, {}, swing.current);
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await page.waitForFunction(() => {
+    const el = document.querySelector('.fuel-card');
+    return getComputedStyle(el).animationName === 'none' && el.getAnimations().length === 0;
+  });
+}
+
 async function run() {
   const browser = await puppeteer.launch({ executablePath: process.env.CHROME_BIN, headless: true,
     args: process.env.QA_NO_SANDBOX === '1' ? ['--no-sandbox', '--disable-setuid-sandbox'] : [] });
@@ -71,16 +120,22 @@ async function run() {
   }
   try {
     const { page, net } = await pageWith(false);
-    for (const width of [320, 375, 390, 700, 768, 820, 1024, 1280, 1440, 1920]) {
-      await page.setViewport({ width, height: 900 });
-      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Débordement ${width}px`);
-    }
+    assert.equal(await page.$$eval('form', forms => forms.length), 1);
+    assert.ok(await page.$('.hero #demande #lead-form'));
+    assert.ok(await page.$eval('.fuel-card', el => !el.textContent.trim() && !el.querySelector('img, text, use')));
+    await checkHero(page, 'Flotte');
+    await checkSuspension(page);
     assert.ok(await page.evaluate(() => [...document.querySelectorAll('a[href^="#"]')].every(a => document.getElementById(a.hash.slice(1)))));
     await page.setViewport({ width: 390, height: 844 });
     await page.click('.menu-toggle');
     assert.equal(await page.$eval('.menu-toggle', e => e.getAttribute('aria-expanded')), 'true');
     await page.keyboard.press('Escape');
     assert.equal(await page.$eval('.menu-toggle', e => e.getAttribute('aria-expanded')), 'false');
+    await page.click('.menu-toggle'); await page.click('.head-cta');
+    assert.equal(await page.$eval('.menu-toggle', e => e.getAttribute('aria-expanded')), 'false');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'demande');
+    assert.ok(await page.evaluate(() => document.querySelector('#demande').getBoundingClientRect().top >= document.querySelector('.site-head').getBoundingClientRect().bottom));
+    await page.keyboard.press('Tab'); assert.equal(await page.evaluate(() => document.activeElement.name), 'reponse_1');
     await page.click('#tab-independant'); await page.keyboard.press('ArrowRight');
     assert.ok(await page.$eval('#profil-pme', e => !e.hidden));
     await page.click('#profil-pme .text-link');
@@ -91,19 +146,24 @@ async function run() {
     assert.ok(await page.$eval('#send', e => e.disabled));
     assert.ok(await page.$eval('#prenom', e => e.disabled));
     assert.ok(await page.$eval('#not-configured', e => !e.hidden));
+    await checkHero(page, 'Coordonnées sans configuration');
+    await page.setViewport({ width: 390, height: 844 });
     await page.click('#back');
     assert.equal(await page.$eval('input[name="reponse_1"]:checked', e => e.value), '2 à 10 véhicules');
     await page.click('.faq-list summary');
     assert.ok(await page.$eval('.faq-list details', e => e.open));
     assert.equal(net.posts.length, 0); assert.equal(net.tags, 0); assert.deepEqual(net.external, []);
-    console.log('OK — responsive 320–1920 px, ancres, menu, onglets clavier, préremplissage, FAQ, retour et garde sans configuration.');
+    console.log('OK : Hero 320 à 2 560 px, deux étapes lisibles, suspension et mouvement réduit, CTA, clavier, menu, préremplissage, FAQ et garde sans configuration.');
     await page.close();
 
     for (const measure of [false, true]) {
       const { page: p, net: n } = await pageWith(true);
+      // A prospect following a CTA must not lose the opt-in fragment attribution.
+      await p.click('.hero-actions .btn'); assert.equal(await p.evaluate(() => location.hash), '#demande');
       await stepOne(p); await p.click('#send');
       assert.equal(await p.$$eval('#step-two [aria-invalid="true"]', items => items.length), 7);
-      assert.equal(n.posts.length, 0);
+      assert.equal(n.posts.length, 0); assert.equal(n.tags, 0);
+      if (measure) { await checkHero(p, 'Erreurs de coordonnées'); await p.setViewport({ width: 1024, height: 768 }); }
       await contact(p);
       await p.evaluate(() => {
         const fields = document.getElementById('lead-form').elements;
@@ -138,6 +198,7 @@ async function run() {
       assert.equal(new Set(n.posts.map(p => p.id)).size, 1, 'Stable id on retry');
       const payload = n.posts.at(-1);
       assert.equal(payload.formId, fixture);
+      assert.equal(payload.data.telephone_verifie, 'non'); assert.equal(payload.data.question_1, 'Combien de véhicules souhaitez-vous équiper ?');
       assert.equal(payload.data.telephone, '0600000000'); assert.equal(payload.data.consentement, 'oui');
       assert.equal(payload.data.reponse_1, '2 à 10 véhicules'); assert.equal(payload.data.reponse_2, 'TPE ou PME');
       assert.equal(payload.data.categorie, ''); assert.equal(payload.data.gclid, undefined);

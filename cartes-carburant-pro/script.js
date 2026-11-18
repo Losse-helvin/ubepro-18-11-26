@@ -1,4 +1,4 @@
-/* Sillage — static LP. No cookie, third-party script or lead request on load. */
+/* No cookie, third-party script or lead request on load. */
 (() => {
   'use strict';
 
@@ -9,9 +9,8 @@
     menu.setAttribute('aria-expanded', String(open));
   }
   menu.addEventListener('click', () => toggleMenu(menu.getAttribute('aria-expanded') !== 'true'));
-  nav.addEventListener('click', () => toggleMenu(false));
   document.addEventListener('click', event => {
-    if (!event.target.closest('.site-head')) toggleMenu(false);
+    if (!menu.contains(event.target)) toggleMenu(false);
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
@@ -137,7 +136,11 @@
   // Do not copy a raw URL, click ID or any contact information into analytics.
   function attribution() {
     const url = new URL(window.location.href);
-    const hash = url.hash.slice(1);
+    // An in-page CTA replaces a campaign fragment with e.g. #demande. Read
+    // the browser's original navigation URL only here, after measurement opt-in.
+    const arrival = performance.getEntriesByType?.('navigation')[0]?.name;
+    const fragmentUrl = !url.hash.includes('=') && arrival ? new URL(arrival, url) : url;
+    const hash = fragmentUrl.hash.slice(1);
     const fragment = new URLSearchParams(hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : hash);
     const tracking = {};
     ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'utm_category',
