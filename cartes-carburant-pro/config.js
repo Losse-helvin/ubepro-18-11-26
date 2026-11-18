@@ -8,5 +8,8 @@ window.UBE_CONFIG = Object.freeze({
   leadApiMode: 'nocors',       // 'nocors' comme les autres LP du dépôt ; 'cors' seulement si l'origine est autorisée.
   googleScriptUrl: 'https://script.google.com/macros/s/AKfycbwrbyCb9-cAmIRPGNvnb-aM-CkhQAerrkfP3_HSw-ewmThxsn4vbZt5daaq2aOnL01a1w/exec',
   sheetTimeoutMs: 15000,
+  // Vérification du numéro par SMS : même API que les autres LP du dépôt.
+  smsApiUrl: 'https://mc.hellolead.pro/mon_compte/api/smspartner/envoi_code_verification.php',
+  smsCooldown: 120,
   source: ''                   // Source de secours quand aucune campagne n'est présente.
 });

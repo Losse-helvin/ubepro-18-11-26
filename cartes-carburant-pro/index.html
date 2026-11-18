@@ -86,8 +86,18 @@
                 <div><label class="field" for="societe">Entreprise<input id="societe" name="societe" autocomplete="organization" maxlength="160" required></label><p class="field-error" id="error-societe" hidden></p></div>
                 <div><label class="field" for="cp">Code postal<input id="cp" name="code_postal" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" required></label><p class="field-error" id="error-code_postal" hidden></p></div>
                 <div><label class="field" for="mail">E-mail professionnel<input id="mail" name="mail" type="email" autocomplete="email" maxlength="254" required></label><p class="field-error" id="error-mail" hidden></p></div>
-                <div><label class="field" for="tel">Téléphone<input id="tel" name="telephone" type="tel" autocomplete="tel" maxlength="25" required></label><p class="field-error" id="error-telephone" hidden></p></div>
+                <div><label class="field" for="tel">Téléphone<input id="tel" name="telephone" type="tel" autocomplete="tel" maxlength="25" inputmode="tel" required></label><p class="field-error" id="error-telephone" hidden></p></div>
               </div>
+              <div class="sms" id="verification-sms">
+                  <button class="sms-send" type="button" id="sms-send">Vérifier ce numéro par SMS</button>
+                  <p class="sms-help">Un code à 6 chiffres, valable 10 minutes et à usage unique. Un nouveau code remplace le précédent. Utilisez un mobile : les numéros en 06 ou 07.</p>
+                  <div class="sms-code-row" id="sms-code-row" hidden>
+                    <label class="sms-code-label" for="sms-code">Code reçu</label>
+                    <input class="sms-code" id="sms-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code">
+                    <button class="btn btn-dark sms-check" type="button" id="sms-check">Vérifier</button>
+                  </div>
+                  <p class="sms-message" id="sms-message" role="status" aria-live="polite"></p>
+                </div>
               <label class="consent"><input type="checkbox" name="consentement" value="oui" required><span>J’accepte que mes coordonnées soient transmises au partenaire chargé de mon étude pour qu’il me recontacte à ce sujet.</span></label><p class="field-error" id="error-consentement" hidden></p>
               <a class="privacy" href="https://www.ubepro.fr/politique-de-confidentialite-donnees-personnelles/" target="_blank" rel="noopener noreferrer">Utilisation de mes données<span class="sr-only"> (nouvel onglet)</span></a>
               <p id="submit-error" class="submit-error" role="alert" hidden></p>

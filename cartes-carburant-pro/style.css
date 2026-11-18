@@ -214,6 +214,22 @@ legend { padding: 0; }
 .form-next { width: 100%; min-height: 46px; margin-top: 16px; }
 .form-sub { color: var(--muted); margin-bottom: 14px; font-size: 13px; }
 .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+/* Vérification du numéro par SMS : même langage visuel que les champs. */
+.sms { margin-top: 13px; padding-top: 12px; border-top: 1px solid #dcdfd9; }
+.sms-send { min-height: 38px; padding: 8px 12px; border: 1px solid #82919c; border-radius: 5px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 600; }
+.sms-send:hover:not(:disabled) { border-color: var(--ink); background: #f4f6f4; }
+.sms-send:disabled { opacity: .6; cursor: not-allowed; }
+.sms-help { max-width: 46ch; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.sms-code-row { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.sms-code-label { font-size: 12px; font-weight: 600; }
+.sms-code { width: 92px; min-height: 38px; padding: 7px 9px; border: 1px solid #8b969e; border-radius: 5px; background: #fff; font-size: 15px; letter-spacing: .18em; }
+.sms-check { min-height: 38px; padding: 8px 13px; font-size: 12px; }
+.sms-message { margin-top: 7px; font-size: 12px; line-height: 1.45; }
+.sms-message:empty { display: none; }
+.sms-message.is-error { color: #a22724; }
+.sms-message.is-success { color: #1d6b3d; font-weight: 600; }
+.sms-verified { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: #1d6b3d; font-size: 12px; font-weight: 600; }
+.sms-verified .icon { width: 15px; height: 15px; stroke-width: 2.4; }
 .consent { display: flex; align-items: start; gap: 9px; margin-top: 17px; font-size: 12px; line-height: 1.5; cursor: pointer; }
 .consent input { flex: none; margin: 0; width: 24px; height: 24px; accent-color: var(--navy); }
 .optional { margin-top: 10px; color: var(--muted); }

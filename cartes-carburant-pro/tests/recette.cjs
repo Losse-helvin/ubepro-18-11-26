@@ -11,7 +11,7 @@ const base = new URL(process.env.LP_URL || 'http://127.0.0.1:8000/');
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(base.hostname), 'Test local uniquement');
 const context = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../config.js'), 'utf8'), context);
-const { leadApiUrl, googleScriptUrl, formId } = context.window.UBE_CONFIG;
+const { leadApiUrl, googleScriptUrl, formId, smsApiUrl } = context.window.UBE_CONFIG;
 assert.match(formId, /^c\d{14}o$/, 'formId au format c + 14 chiffres + o');
 // Ces valeurs éphémères ne quittent pas le navigateur de test.
 const fixture = randomUUID();
@@ -73,7 +73,7 @@ async function run() {
   const errors = [];
   async function pageWith(configured, overrides = {}) {
     const page = await browser.newPage();
-    const net = { mode: 'ok', crm: [], sheet: [], beacons: 0, external: [], gtm: 0 };
+    const net = { mode: 'ok', crm: [], sheet: [], sms: [], external: [], gtm: 0 };
     const cors = { 'Access-Control-Allow-Origin': base.origin, 'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type' };
     page.on('pageerror', e => errors.push(e.message));
@@ -82,6 +82,20 @@ async function run() {
     page.on('request', async request => {
       const url = new URL(request.url());
       if (request.method() === 'OPTIONS') return request.respond({ status: 204, headers: cors });
+      if (url.href === smsApiUrl && request.method() === 'POST') {
+        const params = new URLSearchParams(request.postData());
+        net.sms.push(Object.fromEntries(params.entries()));
+        const json = (status, body) => request.respond({ status, headers: cors, contentType: 'application/json', body: JSON.stringify(body) });
+        if (net.mode === 'sms-offline') return request.abort('failed');
+        if (params.get('action') === 'envoyer_code') {
+          if (net.mode === 'sms-429') return json(429, { status: 'error', message: 'Trop de demandes.', retry_after: 30 });
+          return json(200, { status: 'ok' });
+        }
+        const code = params.get('code');
+        if (net.mode === 'sms-bad-code' || code !== '123456') return json(422, { status: 'error', message: 'Code invalide.' });
+        if (net.mode === 'sms-expired') return json(410, { status: 'error', message: 'Le code a expiré.' });
+        return json(200, { status: 'ok' });
+      }
       if (request.method() === 'POST') {
         // Modes explicites : chaque transport peut réussir, échouer ou ne jamais répondre.
         const crmFails = ['offline', 'http', 'json', 'negative', 'timeout'].includes(net.mode);
@@ -116,7 +130,7 @@ async function run() {
       if (url.pathname.endsWith('/config.js')) return request.respond({ contentType: 'text/javascript',
         body: 'window.UBE_CONFIG = ' + JSON.stringify(configured
           ? { formId, formName: 'recette', categorie: '', leadApiUrl, leadApiMode: 'nocors',
-              googleScriptUrl, sheetTimeoutMs: 15000, source: '', ...overrides }
+              googleScriptUrl, sheetTimeoutMs: 15000, smsApiUrl, smsCooldown: 120, source: '', ...overrides }
           : { ...context.window.UBE_CONFIG, formId: '' }) });
       return request.continue();
     });
@@ -129,6 +143,13 @@ async function run() {
     await page.select('#activite', 'TPE ou PME');
     await page.click('.form-next');
     await page.waitForSelector('#step-two:not([hidden])');
+  }
+  async function verifySms(page, code = '123456') {
+    await page.click('#sms-send');
+    await page.waitForSelector('#sms-code-row:not([hidden])');
+    await page.type('#sms-code', code);
+    await page.click('#sms-check');
+    await page.waitForFunction(() => !document.querySelector('.sms-verified')?.hidden);
   }
   async function contact(page) {
     for (const [name, text] of Object.entries(data)) await page.type(`[name="${name}"]`, text);
@@ -166,6 +187,9 @@ async function run() {
     assert.ok(await page.$eval('#send', e => e.disabled));
     assert.ok(await page.$eval('#prenom', e => e.disabled));
     assert.ok(await page.$eval('#not-configured', e => !e.hidden));
+    // Pas de campagne configurée : la vérification est annoncée indisponible, sans faux envoi.
+    assert.ok(await page.$eval('#sms-send', e => e.disabled && /indisponible/i.test(e.textContent)));
+    assert.equal(net.sms.length, 0);
     await checkHero(page, 'Coordonnées sans configuration');
     await page.setViewport({ width: 390, height: 844 });
     await page.click('#back');
@@ -194,6 +218,24 @@ async function run() {
     assert.equal(await p.$$eval('#step-two [aria-invalid="true"]', items => items.length), 7);
     assert.equal(n.crm.length, 0); assert.equal(n.sheet.length, 0);
     await contact(p);
+    // Numéro non vérifié : la demande ne part pas et le message l'explique.
+    await p.click('#send');
+    assert.equal(n.crm.length, 0); assert.equal(n.sheet.length, 0); assert.equal(n.sms.length, 0);
+    assert.match(await p.$eval('#error-telephone', e => e.textContent), /Vérifiez votre numéro par SMS/);
+    // Un code erroné est refusé, un numéro en 01 est refusé par le service.
+    await p.click('#sms-send');
+    await p.waitForSelector('#sms-code-row:not([hidden])');
+    await p.type('#sms-code', '000000'); await p.click('#sms-check');
+    await p.waitForFunction(() => document.getElementById('sms-message').classList.contains('is-error'));
+    assert.match(await p.$eval('#sms-message', e => e.textContent), /invalide|expiré/i);
+    // Bon code : badge de vérification, champ téléphone validé.
+    await p.$eval('#sms-code', e => { e.value = ''; });
+    await p.type('#sms-code', '123456'); await p.click('#sms-check');
+    await p.waitForFunction(() => Boolean(document.querySelector('.sms-verified')));
+    assert.deepEqual(n.sms.map(item => item.action), ['envoyer_code', 'verifier_code', 'verifier_code']);
+    assert.equal(n.sms.at(-1).telephone, '0600000000');
+    // Code expiré : message dédié, la vérification déjà acquise n'est pas perdue.
+    assert.equal(net.crm.length, 0);
     await p.evaluate(() => {
       const fields = document.getElementById('lead-form').elements;
       fields.mail.value = 'invalide'; fields.telephone.value = '123'; fields.code_postal.value = '75'; fields.consentement.checked = false;
@@ -206,6 +248,12 @@ async function run() {
       fields.mail.value = mail; fields.telephone.value = telephone; fields.code_postal.value = code_postal;
     }, data);
     await p.click('[name="consentement"]');
+    // Changer le numéro invalide la vérification précédente.
+    await p.$eval('#tel', e => { e.value = '0611111111'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    assert.equal(await p.$eval('.sms-verified', e => e.hidden === false).catch(() => false), false);
+    assert.match(await p.$eval('#sms-message', e => e.textContent), /a changé/);
+    await p.$eval('#tel', e => { e.value = '0600000000'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await verifySms(p);
     await p.$eval('[name="website"]', e => { e.value = 'robot'; }); await p.click('#send');
     assert.equal(n.crm.length, 0); await p.$eval('[name="website"]', e => { e.value = ''; });
     // Les deux destinations en échec : pas de succès, réponses conservées.
@@ -215,6 +263,7 @@ async function run() {
         { timeout: 25000 });
       assert.ok(await p.$eval('#confirmation', e => e.hidden), `pas de succès en mode ${mode}`);
       assert.equal(await p.$eval('#mail', e => e.value), data.mail, `réponses conservées en mode ${mode}`);
+      assert.equal(await p.$eval('.sms-verified', e => e.hidden), false, 'vérification conservée');
     }
     // CRM transmis mais feuille en échec : aucun accusé lisible (nocors), donc
     // pas de confirmation ; le message reste honnête et les réponses sont conservées.
@@ -234,7 +283,7 @@ async function run() {
     assert.equal(new Set(n.crm.map(item => item.id)).size, 1, 'identifiant stable en cas de reprise');
     const payload = n.crm.at(-1);
     assert.equal(payload.formId, formId);
-    assert.equal(payload.data.telephone_verifie, 'non'); assert.equal(payload.data.telephone, '0600000000');
+    assert.equal(payload.data.telephone_verifie, 'oui'); assert.equal(payload.data.telephone, '0600000000');
     assert.equal(payload.data.consentement, 'oui');
     assert.equal(payload.data.question_1, 'Combien de véhicules souhaitez-vous équiper ?');
     assert.equal(payload.data.reponse_1, '2 à 10 véhicules'); assert.equal(payload.data.reponse_2, 'TPE ou PME');
@@ -246,6 +295,7 @@ async function run() {
     const sheet = n.sheet.at(-1);
     assert.equal(sheet.form_id, formId); assert.equal(sheet.id_lead, payload.id);
     assert.equal(sheet.nom, 'Recette'); assert.equal(sheet.telephone, '0600000000');
+    assert.equal(sheet.telephone_verifie, 'oui');
     assert.equal(sheet.reponse_1, '2 à 10 véhicules'); assert.equal(sheet.reponse_2, 'TPE ou PME');
     assert.equal(sheet.source, 'recette'); assert.equal(sheet.utm_campaign, 'flotte');
     assert.equal(sheet.categorie, 'origine');
@@ -255,7 +305,7 @@ async function run() {
     assert.ok(await p.evaluate(() => window.dataLayer === undefined));
     await p.close();
     assert.deepEqual(errors, []);
-    console.log('OK : suivi d’URL (query et fragment, champs masqués), CRM HelloLead, Google Sheet, reprise sans doublon, succès seulement après envoi accepté, aucun GTM. Aucun envoi réel.');
+    console.log('OK : suivi d’URL (query et fragment, champs masqués), vérification du numéro par SMS (code refusé puis accepté, changement de numéro), CRM HelloLead, Google Sheet, reprise sans doublon, succès seulement après envoi accepté, aucun GTM. Aucun envoi réel.');
   } finally { await browser.close(); }
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });
